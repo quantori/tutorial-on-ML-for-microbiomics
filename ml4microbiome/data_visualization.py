@@ -4,7 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-def pie_plot_hospital():
+def pie_plot_hospital(df):
 
 	vals = df['Sample center'].value_counts()
 	
