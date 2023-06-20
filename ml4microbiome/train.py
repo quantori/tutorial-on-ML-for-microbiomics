@@ -1,12 +1,12 @@
 from typing import Any, Literal
 
 import pandas as pd
+from lightgbm import LGBMClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestClassifier
-from lightgbm import LGBMClassifier
 
 
 def scale_features(
@@ -139,8 +139,7 @@ def tune_model(
 
 
 def test_model(model: Any, X_test: pd.DataFrame, y_test: pd.Series) -> float:
-    """
-    Evaluate a model's performance on the test set.
+    """Evaluate a model's performance on the test set.
 
     Args:
         model: trained/tuned model.

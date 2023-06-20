@@ -4,3 +4,4 @@ pandas==2.0.1
 scikit-learn==1.2.2
 matplotlib==3.7.1
 lightgbm==3.3.5
+scikit-bio==0.5.8
