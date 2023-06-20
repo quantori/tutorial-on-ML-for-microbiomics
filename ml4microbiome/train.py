@@ -1,19 +1,27 @@
-import pandas as pd
-from sklearn.preprocessing import StandardScaler
+from typing import Any, Literal
 
-def scale_features(X_train, X_test, cols_to_scale):
-    """
-    Standardize features by removing the mean and scaling to unit variance.
-    
-    Arguments:
-        X_train (pd.DataFrame) -- numerical metadata features, training data
-        X_test (pd.DataFrame) -- numerical metadata features, test data
-        cols_to_scale (list) -- names of feature columns to scale
-        
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from lightgbm import LGBMClassifier
+
+
+def scale_features(
+    X_train: pd.DataFrame, X_test: pd.DataFrame, cols_to_scale: list[str]
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Standardize features by removing the mean and scaling to unit variance.
+
+    Args:
+        X_train: numerical metadata features, training data.
+        X_test: numerical metadata features, test data.
+        cols_to_scale: names of feature columns to scale.
+
     Returns:
-        X_train (pd.DataFrame) -- feature scaled numerical metadata, training data
-        X_test (pd.DataFrame) -- feature scaled numerical metadata, test data
-    """    
+        A tuple containing feature scaled numerical metadata for training and test data.
+    """
     scaler = StandardScaler()
     X_train_scaled = pd.DataFrame(scaler.fit_transform(X_train[cols_to_scale]))
     X_train_scaled.columns = cols_to_scale
@@ -21,7 +29,129 @@ def scale_features(X_train, X_test, cols_to_scale):
     X_test_scaled = pd.DataFrame(scaler.transform(X_test[cols_to_scale]))
     X_test_scaled.columns = cols_to_scale
     X_test_scaled.index = X_test.index
-    X_train = pd.merge(X_train_scaled, X_train.drop(columns=cols_to_scale), left_index=True, right_index=True)
-    X_test = pd.merge(X_test_scaled, X_test.drop(columns=cols_to_scale), left_index=True, right_index=True)
-                
+    X_train = pd.merge(
+        X_train_scaled,
+        X_train.drop(columns=cols_to_scale),
+        left_index=True,
+        right_index=True,
+    )
+    X_test = pd.merge(
+        X_test_scaled,
+        X_test.drop(columns=cols_to_scale),
+        left_index=True,
+        right_index=True,
+    )
+
     return X_train, X_test
+
+
+def train_model(
+    alg: Literal["random_forest", "lightGBM", "logistic_regression_L1"],
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    random_state: int,
+    hyper_parameters: dict[str, Any],
+) -> Any:
+    """Train a model using the specified algorithm and hyperparameters.
+
+    Args:
+        alg: algorithm to use for training.
+            - "random_forest": Random Forest classifier
+            - "lightGBM": LightGBM classifier
+            - "logistic_regression_L1": Logistic Regression with L1 regularization
+        X_train: training feature dataset.
+        y_train: training target labels.
+        random_state: random seed for reproducibility.
+        hyper_parameters: hyperparameters for the specified algorithm. The dictionary
+            should contain the hyperparameters as key-value pairs.
+
+    Returns:
+        The trained model.
+
+    Raises:
+        ValueError: if an invalid algorithm name is provided.
+    """
+    if alg == "random_forest":
+        model = RandomForestClassifier(random_state=random_state, **hyper_parameters)
+    elif alg == "lightGBM":
+        model = LGBMClassifier(random_state=random_state, **hyper_parameters)
+    elif alg == "logistic_regression_L1":
+        model = LogisticRegression(random_state=random_state, **hyper_parameters)
+    else:
+        raise ValueError("Invalid algorithm")
+
+    model.fit(X_train.values, y_train.values)
+
+    return model
+
+
+def tune_model(
+    alg: Literal["random_forest", "lightGBM", "logistic_regression_L1"],
+    param_distributions: dict[str, Any],
+    scoring: str,
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    random_state: int,
+    n_jobs: int = -1,
+) -> tuple[Any, dict[str, Any]]:
+    """Tune the hyperparameters of a model using randomized search.
+
+    Args:
+        alg: algorithm to use for training.
+            - "random_forest": Random Forest classifier
+            - "lightGBM": LightGBM classifier
+            - "logistic_regression_L1": Logistic Regression with L1 regularization
+        param_distributions: hyperparameter distributions for the specified algorithm.
+            The dictionary should contain the hyperparameters as key-value pairs,
+            where the values define the parameter distributions.
+        scoring: scoring metric to optimize during tuning.
+        X_train: training feature dataset.
+        y_train: training target labels.
+        random_state: random seed for reproducibility.
+        n_jobs: number of jobs to run in parallel during tuning.
+            -1 means using all processors.
+
+    Returns:
+        A tuple containing the best estimator and the best hyperparameters found during tuning.
+
+    Raises:
+        ValueError: if an invalid algorithm name is provided.
+    """
+    if alg == "random_forest":
+        model = RandomForestClassifier(random_state=random_state)
+    elif alg == "lightGBM":
+        model = LGBMClassifier(random_state=random_state)
+    elif alg == "logistic_regression_L1":
+        model = LogisticRegression(random_state=random_state)
+    else:
+        raise ValueError("Invalid algorithm")
+
+    search = RandomizedSearchCV(
+        model,
+        param_distributions,
+        scoring=scoring,
+        random_state=random_state,
+        n_jobs=n_jobs,
+    )
+    search.fit(X_train.values, y_train.values)
+
+    return search.best_estimator_, search.best_params_
+
+
+def test_model(model: Any, X_test: pd.DataFrame, y_test: pd.Series) -> float:
+    """
+    Evaluate a model's performance on the test set.
+
+    Args:
+        model: trained/tuned model.
+        X_test: test feature dataset.
+        y_test: test target labels.
+
+    Returns:
+        The Area Under the Receiver Operating Characteristic Curve (AUROC)
+        score of the model on the test set.
+    """
+    yhat = model.predict(X_test.values)
+    auc = roc_auc_score(y_test.values, yhat)
+
+    return auc
