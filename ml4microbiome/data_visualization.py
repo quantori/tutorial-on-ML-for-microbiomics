@@ -1,8 +1,10 @@
+import random
 import textwrap
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+from sklearn.manifold import TSNE
 
 sns.set_theme(style="whitegrid")
 
@@ -302,6 +304,59 @@ def plot_blood_based_biomarkers(df: pd.DataFrame) -> plt.Figure:
         if col_index == 3:
             row_index += 1
             col_index = 0
+
+    plt.tight_layout()
+
+    return fig
+
+
+def plot_genus(
+    df: pd.DataFrame, controls: list[str], schizophrenia: list[str]
+) -> plt.Figure:
+    """Generate a bar plot to compare the relative abundance of different
+    genera between control and schizophrenia groups.
+
+    Args:
+        df: DataFrame containing the genus data.
+        controls: list of column names representing the control group in the DataFrame.
+        schizophrenia: list of column names representing the schizophrenia group in the DataFrame.
+
+    Returns:
+        The generated matplotlib Figure object.
+    """
+    random.seed(92)
+    colors = [[random.random() for _ in range(3)] for _ in range(len(df))]
+
+    fig, (ax_1, ax_2) = plt.subplots(nrows=1, ncols=2, figsize=(20, 10))
+
+    for ax, group in zip([ax_1, ax_2], [controls, schizophrenia]):
+        df_group = df[group]
+        df_group.T.plot(
+            kind="bar",
+            stacked=True,
+            width=1,
+            edgecolor=None,
+            color=colors,
+            ax=ax,
+            legend=False,
+        )
+        ax.set_xticks(ticks=range(len(df_group.columns)), labels=[])
+        ax.set_xlim(-0.5, len(df_group.columns) - 0.5)
+        ax.set_ylim(0, 100)
+
+    ax_1.set_ylabel("Relative abundance (%)")
+    ax_1.set_xlabel("Control")
+    ax_2.set_xlabel("Schizophrenia")
+
+    n_taxa = 25
+    handles, labels = ax_2.get_legend_handles_labels()
+    ax_2.legend(
+        handles[:n_taxa],
+        [i.split("g__")[1].replace("_", ", ") for i in labels[:n_taxa]],
+        bbox_to_anchor=(1.05, 1),
+        title=f"Top {n_taxa} most abundant genera",
+        title_fontsize=14,
+    )
 
     plt.tight_layout()
 
