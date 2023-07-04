@@ -115,11 +115,11 @@ def _violinplot(
         yticklabels: labels for the y-axis tick marks.
     """
     sns.violinplot(data=df, x=x, y=y, ax=ax, inner=None)
+    sns.stripplot(data=df, x=x, y=y, ax=ax, color="black")
     ax.set_yticklabels(yticklabels)
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
     ax.set_title(title)
-    sns.stripplot(data=df, x=x, y=y, ax=ax, color="black")
 
 
 def plot_demographics(df: pd.DataFrame) -> plt.Figure:
@@ -254,6 +254,54 @@ def plot_demographics(df: pd.DataFrame) -> plt.Figure:
         ylabel="",
         legend_labels=["Control", "Schizophrenia"],
     )
+
+    plt.tight_layout()
+
+    return fig
+
+
+def plot_blood_based_biomarkers(df: pd.DataFrame) -> plt.Figure:
+    """Generate a figure with multiple subplots to visualize the distribution
+    of blood-based biomarkers.
+
+    Args:
+        df: DataFrame containing the data.
+
+    Returns:
+        The generated matplotlib Figure object.
+    """
+    fig, axes = plt.subplots(ncols=3, nrows=3, figsize=(20, 20))
+
+    biomarker_columns = [
+        "Tryptophane(μM)",
+        "Glutamic acid(μM)",
+        "Tyrosine(μM)",
+        "Phenylalanine(μM)",
+        "Dopamine(ng/ml)",
+        "Gamma-aminobutyric acid  (GABA)(ng/L)",
+        "Serotonin(ng/ml)",
+        "Kynurenine (KYN)(nmol/L)",
+        "Kynurenic acid (KYNA)(nmol/L)",
+    ]
+
+    row_index = 0
+    col_index = 0
+    for column in biomarker_columns:
+        _violinplot(
+            df=df,
+            x=column,
+            y="Group",
+            ax=axes[row_index, col_index],
+            title=column[: column.index("(")].strip(),
+            xlabel=column[column.index("(") :].strip(),
+            ylabel="",
+            yticklabels=["Control", "Schizophrenia"],
+        )
+
+        col_index += 1
+        if col_index == 3:
+            row_index += 1
+            col_index = 0
 
     plt.tight_layout()
 
