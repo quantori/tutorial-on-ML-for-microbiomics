@@ -110,7 +110,7 @@ def _violinplot(
         title: title of the plot.
         yticklabels: labels for the y-axis tick marks.
     """
-    sns.violinplot(data=df, x=x, y=y, ax=ax)
+    sns.violinplot(data=df, x=x, y=y, ax=ax, inner=None)
     ax.set_yticklabels(yticklabels)
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
