@@ -55,6 +55,8 @@ def _countplot(
     ax: plt.Axes,
     title: str,
     legend_labels: list[str],
+    xlabel: str,
+    ylabel: str,
     yticklabels: list[str] | None = None,
 ) -> None:
     """Create a countplot using seaborn to visualize the count of data points
@@ -81,13 +83,21 @@ def _countplot(
                 for status in df[y].unique()
             ]
         )
-    ax.set_ylabel("")
-    ax.set_xlabel("")
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel)
     ax.set_title(title)
+    sns.move_legend(ax, "lower right")
 
 
 def _violinplot(
-    df: pd.DataFrame, x: str, y: str, ax: plt.Axes, title: str, yticklabels: list[str]
+    df: pd.DataFrame,
+    x: str,
+    y: str,
+    ax: plt.Axes,
+    title: str,
+    xlabel: str,
+    ylabel: str,
+    yticklabels: list[str],
 ) -> None:
     """Create a violin plot using seaborn to visualize the distribution of data
     points in each category.
@@ -100,11 +110,12 @@ def _violinplot(
         title: title of the plot.
         yticklabels: labels for the y-axis tick marks.
     """
-    sns.violinplot(data=df, x=x, y=y, inner="points", ax=ax)
+    sns.violinplot(data=df, x=x, y=y, ax=ax)
     ax.set_yticklabels(yticklabels)
-    ax.set_ylabel("")
-    ax.set_xlabel("")
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel)
     ax.set_title(title)
+    sns.stripplot(data=df, x=x, y=y, ax=ax, color="black")
 
 
 def plot_demographics(df: pd.DataFrame) -> plt.Figure:
@@ -144,6 +155,8 @@ def plot_demographics(df: pd.DataFrame) -> plt.Figure:
         y="Group",
         ax=axes[0, 1],
         title="Age",
+        xlabel="Age (years)",
+        ylabel="",
         yticklabels=["Control", "Schizophrenia"],
     )
 
@@ -155,6 +168,8 @@ def plot_demographics(df: pd.DataFrame) -> plt.Figure:
         ax=axes[0, 2],
         title="Gender",
         legend_labels=["Control", "Schizophrenia"],
+        xlabel="count",
+        ylabel="",
         yticklabels=["Male", "Female"],
     )
 
@@ -165,6 +180,8 @@ def plot_demographics(df: pd.DataFrame) -> plt.Figure:
         hue="Group",
         ax=axes[1, 0],
         title="Marital status",
+        xlabel="count",
+        ylabel="",
         legend_labels=["Control", "Schizophrenia"],
     )
 
@@ -175,6 +192,8 @@ def plot_demographics(df: pd.DataFrame) -> plt.Figure:
         hue="Group",
         ax=axes[1, 1],
         title="Dwelling condition",
+        xlabel="count",
+        ylabel="",
         legend_labels=["Control", "Schizophrenia"],
     )
 
@@ -185,6 +204,8 @@ def plot_demographics(df: pd.DataFrame) -> plt.Figure:
         hue="Group",
         ax=axes[1, 2],
         title="Education level",
+        xlabel="count",
+        ylabel="",
         legend_labels=["Control", "Schizophrenia"],
     )
 
@@ -195,8 +216,16 @@ def plot_demographics(df: pd.DataFrame) -> plt.Figure:
         hue="Group",
         ax=axes[2, 0],
         title="Sample center",
+        xlabel="count",
+        ylabel="",
         legend_labels=["Control", "Schizophrenia"],
     )
+    # Add horizontal lines
+    axes[2, 0].axhline(y=0.7, color="gray", linestyle="--")
+    axes[2, 0].axhline(y=1.6, color="gray", linestyle="--")
+    axes[2, 0].axhline(y=2.5, color="gray", linestyle="--")
+    axes[2, 0].axhline(y=3.5, color="gray", linestyle="--")
+    axes[2, 0].axhline(y=4.5, color="gray", linestyle="--")
 
     # BMI
     _violinplot(
@@ -205,6 +234,8 @@ def plot_demographics(df: pd.DataFrame) -> plt.Figure:
         y="Group",
         ax=axes[2, 1],
         title="BMI",
+        xlabel="BMI",
+        ylabel="",
         yticklabels=["Control", "Schizophrenia"],
     )
 
@@ -215,6 +246,8 @@ def plot_demographics(df: pd.DataFrame) -> plt.Figure:
         hue="Group",
         ax=axes[2, 2],
         title="Smoking",
+        xlabel="count",
+        ylabel="",
         legend_labels=["Control", "Schizophrenia"],
     )
 
