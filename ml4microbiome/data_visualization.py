@@ -69,6 +69,8 @@ def _countplot(
         ax: matplotlib Axes object to draw the plot onto.
         title: title of the plot.
         legend_labels: labels for the legend.
+        xlabel: label for the x-axis.
+        ylabel: label for the y-axis.
         yticklabels: labels for the y-axis tick marks. If None, it uses the unique
             values of the 'y' column with line breaks for long labels.
     """
@@ -108,6 +110,8 @@ def _violinplot(
         y: column name of the categorical variable to be plotted on the y-axis.
         ax: matplotlib Axes object to draw the plot onto.
         title: title of the plot.
+        xlabel: label for the x-axis.
+        ylabel: label for the y-axis.
         yticklabels: labels for the y-axis tick marks.
     """
     sns.violinplot(data=df, x=x, y=y, ax=ax, inner=None)
