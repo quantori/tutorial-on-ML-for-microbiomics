@@ -361,3 +361,26 @@ def plot_genus(
     plt.tight_layout()
 
     return fig
+
+
+def plot_tsne(df: pd.DataFrame, hue: pd.Series, random_state: int) -> plt.Figure:
+    """Generate a scatter plot using t-SNE dimensionality reduction for CLR
+    transformed genus data.
+
+    Args:
+        df: DataFrame containing the genus data.
+        hue: Series specifying the grouping variable for coloring the data points.
+        random_state: seed used by the random number generator for reproducibility.
+
+    Returns:
+        The generated matplotlib Figure object.
+    """
+    projection = TSNE(random_state=random_state).fit_transform(df.values)
+    fig = plt.figure(figsize=(10, 10))
+    sns.scatterplot(x=projection[:, 0], y=projection[:, 1], hue=hue)
+
+    legend_labels = ["Control", "Schizophrenia"]
+    legend_handles = plt.gca().get_legend_handles_labels()[0]
+    plt.legend(legend_handles, legend_labels, loc="lower right")
+
+    return fig
