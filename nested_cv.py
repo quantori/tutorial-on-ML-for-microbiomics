@@ -11,7 +11,6 @@ tax_levels = ["all", "species", "genus", "family"]
 data_types = ["metadata_only", "microbiome_only", "metadata_microbiome"]
 metadata_continuous_cols = [
     "Age",
-    "BMI",
     "Height(cm)",
     "Weight(kg)",
     "Pulse(c. p. m)",
