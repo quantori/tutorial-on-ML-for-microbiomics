@@ -23,7 +23,7 @@ import dill
 import numpy as np
 from sklearn.model_selection import train_test_split
 
-from ml4microbiome import train
+from ml4microbiome import train, pre_process
 
 tax_levels = ["all", "species", "genus", "family"]
 data_types = ["metadata_only", "microbiome_only", "metadata_microbiome"]
@@ -134,7 +134,7 @@ for data_type in data_types:
                 #    Calculate scaling stats on the TRAINING set alone
                 #    Use TRAINING set stats to scale TRAINING and TEST set values
                 if data_type != "microbiome_only":
-                    outer_X_train, outer_X_test = train.scale_features(
+                    outer_X_train, outer_X_test = pre_process.scale_features(
                         outer_X_train, outer_X_test, metadata_continuous_cols
                     )
 
