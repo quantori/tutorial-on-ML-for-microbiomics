@@ -1,3 +1,4 @@
+"""Module containing utility functions for model training and testing."""
 from typing import Any, Literal
 
 import pandas as pd

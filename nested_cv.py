@@ -1,3 +1,21 @@
+"""This script performs a nested cross-validation. It trains and evaluates
+models and collects the results.
+
+The script follows the following steps:
+1. Imports necessary libraries and modules.
+2. Defines the taxonomic levels, data types, columns containing continuous data,
+learning algorithms, and other parameters.
+3. Loads the features and target labels from pickle files.
+4. Performs the experiment for each combination of data type, taxonomic level,
+and algorithm:
+    a. Splits the data into training and testing sets.
+    b. Performs median imputation and feature scaling on the data.
+    c. Splits the training set into training and validation sets to find the best
+    hyperparameters.
+    d. Trains a model using the best hyperparameters found in the inner loop.
+    e. Evaluates the model's performance on the outer test set and records the results.
+5. Saves the inner and outer results to pickle files.
+"""
 import datetime
 from collections import defaultdict
 
