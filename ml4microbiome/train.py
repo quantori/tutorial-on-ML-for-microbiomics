@@ -80,7 +80,7 @@ def train_model(
     else:
         raise ValueError("Invalid algorithm")
 
-    model.fit(X_train.values, y_train.values)
+    model.fit(X_train.to_numpy(), y_train.to_numpy())
 
     return model
 
@@ -133,7 +133,7 @@ def tune_model(
         random_state=random_state,
         n_jobs=n_jobs,
     )
-    search.fit(X_train.values, y_train.values)
+    search.fit(X_train.to_numpy(), y_train.to_numpy())
 
     return search.best_estimator_, search.best_params_
 
@@ -150,7 +150,7 @@ def test_model(model: Any, X_test: pd.DataFrame, y_test: pd.Series) -> float:
         The Area Under the Receiver Operating Characteristic Curve (AUROC)
         score of the model on the test set.
     """
-    yhat = model.predict(X_test.values)
-    auc = roc_auc_score(y_test.values, yhat)
+    yhat = model.predict(X_test.to_numpy())
+    auc = roc_auc_score(y_test.to_numpy(), yhat)
 
     return auc
