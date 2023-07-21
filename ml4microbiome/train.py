@@ -1,3 +1,4 @@
+"""Module containing utility functions for model training and testing."""
 from typing import Any, Literal
 
 import pandas as pd
@@ -6,43 +7,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import RandomizedSearchCV
-from sklearn.preprocessing import StandardScaler
-
-
-def scale_features(
-    X_train: pd.DataFrame, X_test: pd.DataFrame, cols_to_scale: list[str]
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Standardize features by removing the mean and scaling to unit variance.
-
-    Args:
-        X_train: numerical metadata features, training data.
-        X_test: numerical metadata features, test data.
-        cols_to_scale: names of feature columns to scale.
-
-    Returns:
-        A tuple containing feature scaled numerical metadata for training and test data.
-    """
-    scaler = StandardScaler()
-    X_train_scaled = pd.DataFrame(scaler.fit_transform(X_train[cols_to_scale]))
-    X_train_scaled.columns = cols_to_scale
-    X_train_scaled.index = X_train.index
-    X_test_scaled = pd.DataFrame(scaler.transform(X_test[cols_to_scale]))
-    X_test_scaled.columns = cols_to_scale
-    X_test_scaled.index = X_test.index
-    X_train = pd.merge(
-        X_train_scaled,
-        X_train.drop(columns=cols_to_scale),
-        left_index=True,
-        right_index=True,
-    )
-    X_test = pd.merge(
-        X_test_scaled,
-        X_test.drop(columns=cols_to_scale),
-        left_index=True,
-        right_index=True,
-    )
-
-    return X_train, X_test
 
 
 def train_model(
@@ -80,7 +44,7 @@ def train_model(
     else:
         raise ValueError("Invalid algorithm")
 
-    model.fit(X_train.values, y_train.values)
+    model.fit(X_train.to_numpy(), y_train.to_numpy())
 
     return model
 
@@ -133,7 +97,7 @@ def tune_model(
         random_state=random_state,
         n_jobs=n_jobs,
     )
-    search.fit(X_train.values, y_train.values)
+    search.fit(X_train.to_numpy(), y_train.to_numpy())
 
     return search.best_estimator_, search.best_params_
 
@@ -150,7 +114,7 @@ def test_model(model: Any, X_test: pd.DataFrame, y_test: pd.Series) -> float:
         The Area Under the Receiver Operating Characteristic Curve (AUROC)
         score of the model on the test set.
     """
-    yhat = model.predict(X_test.values)
-    auc = roc_auc_score(y_test.values, yhat)
+    yhat = model.predict(X_test.to_numpy())
+    auc = roc_auc_score(y_test.to_numpy(), yhat)
 
     return auc

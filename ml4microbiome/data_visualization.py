@@ -1,3 +1,4 @@
+"""Module containing utility functions to visualize data."""
 import random
 import textwrap
 

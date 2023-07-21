@@ -1,3 +1,4 @@
+"""Module containing utility functions to preprocess data."""
 import copy
 from collections import defaultdict
 from typing import Literal
@@ -5,6 +6,7 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 from skbio.stats.composition import clr, multiplicative_replacement
+from sklearn.preprocessing import StandardScaler
 
 
 def get_tax_level(
@@ -108,3 +110,39 @@ def merge_metadata_microbiome(
         )
 
     return data_dict_copy
+
+
+def scale_features(
+    X_train: pd.DataFrame, X_test: pd.DataFrame, cols_to_scale: list[str]
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Standardize features by removing the mean and scaling to unit variance.
+
+    Args:
+        X_train: numerical metadata features, training data.
+        X_test: numerical metadata features, test data.
+        cols_to_scale: names of feature columns to scale.
+
+    Returns:
+        A tuple containing feature scaled numerical metadata for training and test data.
+    """
+    scaler = StandardScaler()
+    X_train_scaled = pd.DataFrame(scaler.fit_transform(X_train[cols_to_scale]))
+    X_train_scaled.columns = cols_to_scale
+    X_train_scaled.index = X_train.index
+    X_test_scaled = pd.DataFrame(scaler.transform(X_test[cols_to_scale]))
+    X_test_scaled.columns = cols_to_scale
+    X_test_scaled.index = X_test.index
+    X_train = pd.merge(
+        X_train_scaled,
+        X_train.drop(columns=cols_to_scale),
+        left_index=True,
+        right_index=True,
+    )
+    X_test = pd.merge(
+        X_test_scaled,
+        X_test.drop(columns=cols_to_scale),
+        left_index=True,
+        right_index=True,
+    )
+
+    return X_train, X_test
