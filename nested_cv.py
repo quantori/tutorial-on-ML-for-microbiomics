@@ -46,7 +46,7 @@ metadata_continuous_cols = [
     "Kynurenic acid (KYNA)(nmol/L)",
 ]
 learning_algs = ["random_forest", "lightGBM", "logistic_regression_L1"]
-reps = 100
+reps = 10
 test_size = 0.2
 params_distributions = {
     "random_forest": {
@@ -97,7 +97,6 @@ with open("./y_encoded.pickle", "rb") as y_encoded_file:
 for data_type in data_types:
     for tax_level in tax_levels:
         for alg in learning_algs:
-            # For metadata_only, there are no taxonomic levels so only train once
             if data_type == "metadata_only" and tax_level != "all":
                 continue
 
@@ -107,7 +106,7 @@ for data_type in data_types:
 
             for outer_iter_no in range(reps):
                 start_time = datetime.datetime.now()
-                # Define outer loop training and test sets
+
                 (
                     outer_X_train,
                     outer_X_test,
@@ -121,29 +120,15 @@ for data_type in data_types:
                     random_state=outer_iter_no,
                 )
 
-                # Median imputation based on outer cv set
-                # To avoid data leakage:
-                #     Calculate median values on the TRAINING set
-                #     Use TRAINING set medians to impute TRAINING and TEST set missing values
                 outer_X_train = outer_X_train.fillna(outer_X_train.median())
                 outer_X_test = outer_X_test.fillna(outer_X_train.median())
 
-                # Feature scaling based on outer cv set
-                # (Probably not actually that helpful here, but good for demonstration purposes)
-                # To avoid data leakage:
-                #    Calculate scaling stats on the TRAINING set alone
-                #    Use TRAINING set stats to scale TRAINING and TEST set values
                 if data_type != "microbiome_only":
                     outer_X_train, outer_X_test = pre_process.scale_features(
                         outer_X_train, outer_X_test, metadata_continuous_cols
                     )
 
-                # To do: add feature selection step
-
-                # Store AUROCs for inner test set
-                # And the best hyper-parameters
                 for inner_iter_no in range(reps):
-                    # Define inner loop training and test sets
                     (
                         inner_X_train,
                         inner_X_test,
@@ -173,8 +158,6 @@ for data_type in data_types:
                         "best_params"
                     ].append(best_params)
 
-                # Back to outer training-test split
-                # For a given data_type, tax_level, and alg, identify the best model stored in inner_results
                 aurocs_np = np.array(
                     inner_results[data_type][tax_level][alg][outer_iter_no]["AUROC"]
                 )
@@ -189,12 +172,10 @@ for data_type in data_types:
                 ].append(median_auroc)
                 outer_results[data_type][tax_level][alg]["params"].append(params)
 
-                # Train a model with the best parameters
                 model = train.train_model(
                     alg, outer_X_train, outer_y_train, outer_iter_no, params
                 )
 
-                # Evaluate and record its performance on the outer test set in outer_results
                 auc = train.test_model(model, outer_X_test, outer_y_test)
                 outer_results[data_type][tax_level][alg]["AUROC"].append(auc)
 
