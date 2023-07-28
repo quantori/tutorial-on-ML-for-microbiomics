@@ -56,8 +56,8 @@ def get_tax_level(
     if tax_level != "species":
         one_lower = possibilities[idx + 1]
         return df[
-            (df.index.str.contains(tax_level[0] + "__") == True)
-            & (df.index.str.contains(one_lower[0] + "__") == False)
+            (df.index.str.contains(tax_level[0] + "__"))
+            & ~(df.index.str.contains(one_lower[0] + "__"))
         ]
     else:
         return df[df.index.str.contains(tax_level[0] + "__")]
