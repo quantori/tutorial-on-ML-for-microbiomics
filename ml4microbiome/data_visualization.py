@@ -25,8 +25,6 @@ def pie_plot_hospital(df: pd.DataFrame) -> plt.Figure:
     colours = ["#0d1a26", "#204060", "#336699", "#538cc6", "#8cb3d9", "#c6d9ec"]
 
     fig, ax = plt.subplots()
-    # theme = plt.get_cmap("gnuplot2")
-    # ax.set_prop_cycle("color", [theme(1.0 * i / len(vals)) for i in range(len(vals))])
 
     labels = []
     for center, count in zip(vals.index, vals):
@@ -137,7 +135,6 @@ def plot_demographics(df: pd.DataFrame) -> plt.Figure:
     """
     fig, axes = plt.subplots(ncols=3, nrows=3, figsize=(20, 20))
 
-    # Diagnosis
     diagnosis = df["Diagnosis"].value_counts()
     colors = ["#0d1a26", "#204060", "#336699"]
     labels = []
@@ -155,7 +152,6 @@ def plot_demographics(df: pd.DataFrame) -> plt.Figure:
     axes[0, 0].add_artist(centre_circle)
     axes[0, 0].set_title("Diagnosis")
 
-    # Age
     _violinplot(
         df=df,
         x="Age",
@@ -167,7 +163,6 @@ def plot_demographics(df: pd.DataFrame) -> plt.Figure:
         yticklabels=["Control", "Schizophrenia"],
     )
 
-    # Gender
     _countplot(
         df=df,
         y="Gender (1:male, 2:female)",
@@ -180,7 +175,6 @@ def plot_demographics(df: pd.DataFrame) -> plt.Figure:
         yticklabels=["Male", "Female"],
     )
 
-    # Marital status
     _countplot(
         df=df,
         y="Marital status",
@@ -192,7 +186,6 @@ def plot_demographics(df: pd.DataFrame) -> plt.Figure:
         legend_labels=["Control", "Schizophrenia"],
     )
 
-    # Dwelling condition
     _countplot(
         df=df,
         y="Dwelling condition",
@@ -204,7 +197,6 @@ def plot_demographics(df: pd.DataFrame) -> plt.Figure:
         legend_labels=["Control", "Schizophrenia"],
     )
 
-    # Education level
     _countplot(
         df=df,
         y="Education level",
@@ -216,7 +208,6 @@ def plot_demographics(df: pd.DataFrame) -> plt.Figure:
         legend_labels=["Control", "Schizophrenia"],
     )
 
-    # Sample center
     _countplot(
         df=df,
         y="Sample center",
@@ -234,7 +225,6 @@ def plot_demographics(df: pd.DataFrame) -> plt.Figure:
     axes[2, 0].axhline(y=3.5, color="gray", linestyle="--")
     axes[2, 0].axhline(y=4.5, color="gray", linestyle="--")
 
-    # BMI
     _violinplot(
         df=df,
         x="BMI",
@@ -246,7 +236,6 @@ def plot_demographics(df: pd.DataFrame) -> plt.Figure:
         yticklabels=["Control", "Schizophrenia"],
     )
 
-    # Smoking
     _countplot(
         df=df,
         y="Smoking",
