@@ -66,8 +66,8 @@ params_distributions = {
         "subsample": np.arange(0.5, 1.0, 0.1),
         "subsample_freq": np.arange(2, 10, 2),
         "colsample_bytree": np.arange(0.5, 1.0, 0.1),
-        "min_child_weight": np.arange(25, 100, 25),
-        "reg_alpha": np.arange(25, 100, 25),
+        "min_child_weight": np.linspace(1e-4, 1e-5, 25),
+        "reg_alpha": np.arange(0, 100, 25),
         "max_bin": np.arange(155, 355, 50),
         "min_child_samples": np.arange(10, 50, 10),
     },
@@ -118,8 +118,8 @@ for data_type in data_types:
                     test_size=test_size,
                     stratify=y_encoded,
                     random_state=outer_iter_no,
-                )
-
+                )					
+				
                 outer_X_train = outer_X_train.fillna(outer_X_train.median())
                 outer_X_test = outer_X_test.fillna(outer_X_train.median())
 
@@ -141,7 +141,7 @@ for data_type in data_types:
                         stratify=outer_y_train,
                         random_state=inner_iter_no,
                     )
-
+                    
                     best_model, best_params = train.tune_model(
                         alg,
                         params_distributions[alg],
