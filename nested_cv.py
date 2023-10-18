@@ -175,9 +175,19 @@ for data_type in data_types:
                 model = train.train_model(
                     alg, outer_X_train, outer_y_train, outer_iter_no, params
                 )
-
-                auc = train.test_model(model, outer_X_test, outer_y_test)
+                
+                yhat = model.predict(X_test.to_numpy())
+                
+                auc, f1, cm = train.test_model(model, yhat, outer_y_test)
                 outer_results[data_type][tax_level][alg]["AUROC"].append(auc)
+                outer_results[data_type][tax_level][alg]["F1"].append(f1)
+                outer_results[data_type][tax_level][alg]["CM"].append(cm)
+                
+                shap = posthoc.shap(model, outer_X_test)
+                outer_results[data_type][tax_level][alg]["SHAP"].append(shap)
+
+                cm_index = posthoc.errors(yhat, outer_y_test)
+                outer_results[data_type][tax_level][alg]["errors"].append(cm_index)
 
                 end_time = datetime.datetime.now()
                 outer_results[data_type][tax_level][alg]["elapsed_time"].append(

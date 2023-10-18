@@ -1,11 +1,12 @@
 """Module containing utility functions for model training and testing."""
 from typing import Any, Literal
 
+import numpy as np
 import pandas as pd
 from lightgbm import LGBMClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import confusion_matrix, f1_score, roc_auc_score
 from sklearn.model_selection import RandomizedSearchCV
 
 
@@ -102,19 +103,21 @@ def tune_model(
     return search.best_estimator_, search.best_params_
 
 
-def test_model(model: Any, X_test: pd.DataFrame, y_test: pd.Series) -> float:
+def test_model(model: Any, yhat: np.ndarray, y_test: pd.Series) -> tuple[float, float, np.ndarray]:
     """Evaluate a model's performance on the test set.
 
     Args:
         model: trained/tuned model.
-        X_test: test feature dataset.
+        yhat: test target labels.
         y_test: test target labels.
 
     Returns:
         The Area Under the Receiver Operating Characteristic Curve (AUROC)
         score of the model on the test set.
     """
-    yhat = model.predict(X_test.to_numpy())
     auc = roc_auc_score(y_test.to_numpy(), yhat)
+    f1 = f1_score(y_test.to_numpy(), yhat)
+    cm = confusion_matrix(y_test.to_numpy(), yhat)
+    
+    return auc, f1, cm
 
-    return auc
