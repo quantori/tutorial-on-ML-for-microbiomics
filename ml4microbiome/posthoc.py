@@ -1,9 +1,12 @@
-import shap
-from mealy.error_analyzer import ErrorAnalyzer
-from mealy.error_visualizer import ErrorVisualizer
+from typing import Any
 
-def shap(
+import numpy as np
+import pandas as pd
+import shap
+
+def shap_(
     model: Any, 
+    X_train: pd.DataFrame, 
     X_test: pd.DataFrame, 
     ) -> shap._explanation.Explanation:
     """
@@ -11,15 +14,17 @@ def shap(
     
     Args:
     model: trained/tuned model.
+    X_test: training feature dataset.
     X_test: test feature dataset.
     """
-    explainer = shap.Explainer(model.predict, X_test.to_numpy())
-    shap_values = explainer(X_test)
+    max_evals = max(((2 * X_train.shape[1]) + 1), 500)
+    explainer = shap.Explainer(model.predict, X_train.to_numpy(), max_evals=max_evals)
+    shap_values = explainer(X_test.to_numpy())
     
     return shap_values
 
 def errors(
-	yhat: numpy.ndarray,
+	yhat: np.ndarray,
 	y_test: pd.DataFrame
 	) -> dict[str, int]:
 	"""
