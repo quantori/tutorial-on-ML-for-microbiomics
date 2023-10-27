@@ -46,7 +46,8 @@ metadata_continuous_cols = [
     "Kynurenic acid (KYNA)(nmol/L)",
 ]
 learning_algs = ["random_forest", "lightGBM", "logistic_regression_L1"]
-reps = 5
+outer_reps = 50
+inner_reps = 25
 test_size = 0.2
 params_distributions = {
     "random_forest": {
@@ -104,7 +105,8 @@ for data_type in data_types:
             print(f"Taxonomic level: {tax_level}")
             print(f"Algorithm: {alg}")
 
-            for outer_iter_no in range(reps):
+            for outer_iter_no in range(outer_reps):
+                print(data_type,tax_level,alg, outer_iter_no)
                 start_time = datetime.datetime.now()
 
                 (
@@ -118,8 +120,8 @@ for data_type in data_types:
                     test_size=test_size,
                     stratify=y_encoded,
                     random_state=outer_iter_no,
-                )					
-				
+                )
+
 
                 outer_X_train = outer_X_train.fillna(outer_X_train.median())
                 outer_X_test = outer_X_test.fillna(outer_X_train.median())
@@ -129,7 +131,7 @@ for data_type in data_types:
                         outer_X_train, outer_X_test, metadata_continuous_cols
                     )
                 
-                for inner_iter_no in range(reps):
+                for inner_iter_no in range(inner_reps):
                     (
                         inner_X_train,
                         inner_X_test,
