@@ -23,7 +23,7 @@ import dill
 import numpy as np
 from sklearn.model_selection import train_test_split
 
-from ml4microbiome import train, pre_process, posthoc
+from ml4microbiome import train, pre_process
 
 tax_levels = ["all", "species", "genus", "family"]
 data_types = ["metadata_only", "microbiome_only", "metadata_microbiome"]
@@ -46,8 +46,7 @@ metadata_continuous_cols = [
     "Kynurenic acid (KYNA)(nmol/L)",
 ]
 learning_algs = ["random_forest", "lightGBM", "logistic_regression_L1"]
-outer_reps = 50
-inner_reps = 25
+reps = 10
 test_size = 0.2
 params_distributions = {
     "random_forest": {
@@ -105,8 +104,7 @@ for data_type in data_types:
             print(f"Taxonomic level: {tax_level}")
             print(f"Algorithm: {alg}")
 
-            for outer_iter_no in range(outer_reps):
-                print(data_type,tax_level,alg, outer_iter_no)
+            for outer_iter_no in range(reps):
                 start_time = datetime.datetime.now()
 
                 (
@@ -120,9 +118,8 @@ for data_type in data_types:
                     test_size=test_size,
                     stratify=y_encoded,
                     random_state=outer_iter_no,
-                )
-
-
+                )					
+				
                 outer_X_train = outer_X_train.fillna(outer_X_train.median())
                 outer_X_test = outer_X_test.fillna(outer_X_train.median())
 
@@ -130,8 +127,8 @@ for data_type in data_types:
                     outer_X_train, outer_X_test = pre_process.scale_features(
                         outer_X_train, outer_X_test, metadata_continuous_cols
                     )
-                
-                for inner_iter_no in range(inner_reps):
+
+                for inner_iter_no in range(reps):
                     (
                         inner_X_train,
                         inner_X_test,
@@ -144,7 +141,7 @@ for data_type in data_types:
                         stratify=outer_y_train,
                         random_state=inner_iter_no,
                     )
-                                        
+                    
                     best_model, best_params = train.tune_model(
                         alg,
                         params_distributions[alg],
@@ -153,18 +150,10 @@ for data_type in data_types:
                         inner_y_train,
                         inner_iter_no,
                     )
-                    
-                    inner_yhat = best_model.predict(inner_X_test.to_numpy())
-                    auc, f1, cm = train.test_model(best_model, inner_yhat, inner_y_test)
+                    auc = train.test_model(best_model, inner_X_test, inner_y_test)
                     inner_results[data_type][tax_level][alg][outer_iter_no][
                         "AUROC"
                     ].append(auc)
-                    inner_results[data_type][tax_level][alg][outer_iter_no][
-                        "F1"
-                    ].append(f1)
-                    inner_results[data_type][tax_level][alg][outer_iter_no][
-                        "errors"
-                    ].append(cm)                        
                     inner_results[data_type][tax_level][alg][outer_iter_no][
                         "best_params"
                     ].append(best_params)
@@ -187,16 +176,17 @@ for data_type in data_types:
                     alg, outer_X_train, outer_y_train, outer_iter_no, params
                 )
                 
-                outer_yhat = model.predict(outer_X_test.to_numpy())
-                auc, f1, cm = train.test_model(model, outer_yhat, outer_y_test)
+                yhat = model.predict(outer_X_test.to_numpy())
+                
+                auc, f1, cm = train.test_model(model, yhat, outer_y_test)
                 outer_results[data_type][tax_level][alg]["AUROC"].append(auc)
                 outer_results[data_type][tax_level][alg]["F1"].append(f1)
                 outer_results[data_type][tax_level][alg]["CM"].append(cm)
+                
+                shap = posthoc.shap(model, outer_X_test)
+                outer_results[data_type][tax_level][alg]["SHAP"].append(shap)
 
-                shap_vals = posthoc.shap_(model, outer_X_train, outer_X_test)
-                outer_results[data_type][tax_level][alg]["SHAP"].append(shap_vals)
-
-                cm_index = posthoc.errors(outer_yhat, outer_y_test)
+                cm_index = posthoc.errors(yhat, outer_y_test)
                 outer_results[data_type][tax_level][alg]["errors"].append(cm_index)
 
                 end_time = datetime.datetime.now()

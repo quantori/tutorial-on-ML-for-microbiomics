@@ -44,24 +44,32 @@ def get_tax_level(
         "family",
         "genus",
         "species",
+        "strain"
     ]
+    
     tax_level = tax_level.lower()
     if tax_level not in possibilities:
         raise ValueError(
             "Invalid taxonomic level provided. The taxonomic level must be one "
-            f"of the following options: {possibilities}"
+            f"of the following options: {possibilities.keys()}"
         )
 
     idx = possibilities.index(tax_level)
-    if tax_level != "species":
-        one_lower = possibilities[idx + 1]
+    
+    if tax_level != "strain" and tax_level != "species":
         return df[
-            (df.index.str.contains(tax_level[0] + "__"))
-            & ~(df.index.str.contains(one_lower[0] + "__"))
+        (df.index.str.contains(possibilities[idx][0] +"__")) 
+        & ~(df.index.str.contains(possibilities[idx+1][0]+"__"))
         ]
-    else:
-        return df[df.index.str.contains(tax_level[0] + "__")]
-
+    if tax_level == "species":
+        return df[
+        (df.index.str.contains(possibilities[idx][0] +"__")) 
+        & ~(df.index.str.contains("t__"))
+        ]
+    if tax_level == "strain":
+        return df[
+        (df.index.str.contains("t__")) 
+        ]
 
 def clr_transform(df: pd.DataFrame) -> pd.DataFrame:
     """Perform CLR transformation on a metaphlan inferred taxa file.
@@ -146,3 +154,13 @@ def scale_features(
     )
 
     return X_train, X_test
+
+
+
+
+
+
+
+
+
+    
