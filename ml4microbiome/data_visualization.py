@@ -1,4 +1,5 @@
 """Module containing utility functions to visualize data."""
+from collections import defaultdict
 import random
 import textwrap
 
@@ -100,7 +101,8 @@ def _violinplot(
     title: str,
     xlabel: str,
     ylabel: str,
-    yticklabels: list[str],
+    yticklabels: list[str]=None,
+    plot_dps: bool=True,
 ) -> None:
     """Create a violin plot using seaborn to visualize the distribution of data
     points in each category.
@@ -114,10 +116,11 @@ def _violinplot(
         xlabel: label for the x-axis.
         ylabel: label for the y-axis.
         yticklabels: labels for the y-axis tick marks.
+        plot_dps: plot stripplot overtop violin plot.
     """
     sns.violinplot(data=df, x=x, y=y, ax=ax, inner=None)
-    sns.stripplot(data=df, x=x, y=y, ax=ax, color="black")
-    ax.set_yticklabels(yticklabels)
+    if plot_dps: sns.stripplot(data=df, x=x, y=y, ax=ax, color="black")
+    if yticklabels: ax.set_yticklabels(yticklabels)
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
     ax.set_title(title)
@@ -373,4 +376,249 @@ def plot_tsne(df: pd.DataFrame, hue: pd.Series, random_state: int) -> plt.Figure
     legend_handles = plt.gca().get_legend_handles_labels()[0]
     plt.legend(legend_handles, legend_labels, loc="lower right")
 
+    return fig
+
+
+def plot_data_type(df: pd.DataFrame) -> plt.Figure:
+    fig, ax = plt.subplots()
+    
+    _violinplot(
+        df=df,
+        x="Data type",
+        y="AUROC",
+        ax=ax,
+        title="",
+        xlabel="",
+        ylabel="AUROC",
+        yticklabels=[],
+        plot_dps=False
+    )
+    
+    ax.tick_params(axis='x', labelrotation=90)
+    ax.set_ylim(0,1)
+    
+    return fig
+    
+def plot_tax_level(df: pd.DataFrame) -> plt.Figure:
+    fig, ax = plt.subplots()
+    
+    _violinplot(
+        df=df,
+        x="Taxonomic level",
+        y="AUROC",
+        ax=ax,
+        title="",
+        xlabel="",
+        ylabel="AUROC",
+        yticklabels=[],
+        plot_dps=False
+    )
+    
+    ax.tick_params(axis='x', labelrotation=90)
+    ax.set_ylim(0,1)
+    
+    return fig
+    
+def plot_ml_alg(df: pd.DataFrame) -> plt.Figure:
+    fig, ax = plt.subplots()
+    
+    _violinplot(
+        df=df,
+        x="ML algorithm",
+        y="AUROC",
+        ax=ax,
+        title="",
+        xlabel="",
+        ylabel="AUROC",
+        yticklabels=[],
+        plot_dps=False
+    )
+    
+    ax.tick_params(axis='x', labelrotation=90)
+    ax.set_ylim(0,1)
+    
+    return fig
+    
+def plot_tax_alg(df: pd.DataFrame) -> plt.Figure:
+    """Generate a figure with multiple subplots to visualize the effect of different 
+    experimental parameters on AUROC.
+
+    Args:
+        df: DataFrame containing the data.
+
+    Returns:
+        The generated matplotlib Figure object.
+    """
+    fig, axes = plt.subplots(ncols=2, nrows=1, figsize=(20, 7))
+
+    _violinplot(
+        df=df[df["Data type"]!="metadata_only"], #metadata_only does not use taxa
+        x="Taxonomic level",
+        y="AUROC",
+        ax=axes[0],
+        title="Taxonomic level",
+        xlabel="",
+        ylabel="AUROC",
+        yticklabels=[],
+        plot_dps=False
+    )
+
+    _violinplot(
+        df=df,
+        x="ML algorithm",
+        y="AUROC",
+        ax=axes[1],
+        title="ML algorithm",
+        xlabel="",
+        ylabel="AUROC",
+        yticklabels=None,
+        plot_dps=False
+    )
+            
+    for i in range(len(axes)): 
+        axes[i].set_ylim(0,1)
+    
+    return fig
+
+def plot_hist_errs_per_sample(count_errs: defaultdict, count_samples: defaultdict) -> plt.Figure:
+    """Generate a histogram showing the frequency of %errors per sample.
+    
+    Args: 
+        count_samples: for each sample, the number of times that the prediction was wrong across all nested CV test reps
+        count_errs: for each sample, the number of predictions made across all nested CV test reps
+    
+    Returns:
+        The generated matplotlib Figure object.    
+    """
+    fig, ax = plt.subplots()
+    ax.hist([count_errs[i]/count_samples[i]*100 for i in count_errs.keys()], bins=10)
+    ax.set_xlabel("% errors per sample")
+    ax.set_ylabel("# samples")
+    ax.set_xlim(0,100)
+    
+    return fig
+    
+def plot_bar_errs_per_sample(count_errs: defaultdict, count_samples: defaultdict) -> plt.Figure:
+    """Generate a histogram showing the frequency of %errors per sample.
+    
+    Args: 
+        count_samples: for each sample, the number of times that the prediction was wrong across all nested CV test reps
+        count_errs: for each sample, the number of predictions made across all nested CV test reps
+    
+    Returns:
+        The generated matplotlib Figure object.    
+    """
+    fig, ax = plt.subplots()
+    x = [i for i in range(len(count_errs.keys()))]
+    y = sorted([count_errs[i]/count_samples[i]*100 for i in count_errs.keys()], reverse=True)
+    ax.bar(x, y)
+    ax.set_xlabel("Sample")
+    ax.set_ylabel("% errors per sample")
+    ax.set_xlim(0,100)
+    ax.set_ylim(0,100)
+    
+    return fig
+
+def get_data(
+    col_name: str, 
+    count_samples: defaultdict, 
+    count_errs: defaultdict, 
+    df_metadata: pd.DataFrame) -> (list, list):
+    """For a given demographic factor, retrieves the error rate (%) per group. This is later used for plotting.
+    
+    Args:
+        col_name: name of demographic factor 
+        count_samples: for each sample, the number of times that the prediction was wrong across all nested CV test reps
+        count_errs: for each sample, the number of predictions made across all nested CV test reps
+        df_metadata: metadata mapping sample to demographic factors
+        
+    Returns:
+        x: names of groups within a demographic factor
+        y: for each group, the percentage of samples that were incorrectly predicted
+
+    Raises:
+        ValueError: if an invalid taxonomic level is provided.
+    """
+    if count_samples[0] < count_errs[0]:
+       raise ValueError(
+               "It appears that count_samples and count_errs were provided in the reverse order."
+       )
+    
+    df1 = pd.DataFrame(count_errs.items()).sort_values(by=[0]).set_index(df_metadata[col_name].index).rename(columns={1:"num errors"})
+    df2 = pd.DataFrame(count_samples.items()).sort_values(by=[0]).set_index(df_metadata[col_name].index).rename(columns={1:"num samples"})
+    df1 = pd.concat([df2, df1], axis=1)
+    df1 = pd.concat([df_metadata[col_name], df1], axis=1)
+    
+    groups = []
+    err_perc = []
+    for i in df1[col_name].unique():
+        errs = df1.groupby(col_name).sum().loc[i]["num errors"]
+        samples = df1.groupby(col_name).sum().loc[i]["num samples"]
+        groups.append(i)
+        err_perc.append(errs/samples*100)
+        
+    return groups, err_perc
+
+def plot_demographic_errs(
+    col_name: str, 
+    count_samples: defaultdict, 
+    count_errs: defaultdict, 
+    df_metadata: pd.DataFrame
+) -> plt.Figure:
+    """Generate a figure with multiple subplots to visualize the effect of different demographic factors on model error rate.
+    
+    Args:
+        col_name: name of demographic factor 
+        count_samples: for each sample, the number of times that the prediction was wrong across all nested CV test reps
+        count_errs: for each sample, the number of predictions made across all nested CV test reps
+        df_metadata: metadata mapping sample to demographic factors
+        
+    Returns:
+        The generated matplotlib Figure object. 
+    """
+
+    fig, axes = plt.subplots(ncols=3, nrows=2, figsize=(10, 10))
+        
+    # Gender
+    x_gender, y_gender = get_data("Gender (1:male, 2:female)", count_samples, count_errs, df_metadata)
+    x_gender = ['Male' if item == 1 else 'Female' for item in x_gender]
+    axes[0,0].bar(x_gender,y_gender)
+    axes[0,0].set_title('Gender')
+    axes[0,0].set_ylabel("% of samples with an error")
+    axes[0,0].set_ylim(0,50)
+        
+    # Dwelling condition
+    x_dwelling, y_dwelling = get_data("Dwelling condition", count_samples, count_errs, df_metadata)
+    axes[0,1].bar(x_dwelling,y_dwelling)
+    axes[0,1].set_title('Dwelling condition')
+    axes[0,1].set_ylabel("% of samples with an error")
+    axes[0,1].set_ylim(0,50)
+    
+    # Education level
+    x_ed, y_ed = get_data("Education level", count_samples, count_errs, df_metadata)
+    axes[0,2].bar(x_ed,y_ed)
+    axes[0,2].set_title('Education level')
+    axes[0,2].set_xticklabels(x_ed, rotation = 90)
+    axes[0,2].set_ylabel("% of samples with an error")
+    axes[0,2].set_ylim(0,50)
+    
+    # Sample center
+    x_center, y_center = get_data("Sample center", count_samples, count_errs, df_metadata)
+    axes[1,0].bar(x_center,y_center)
+    axes[1,0].set_title('Sample center')
+    axes[1,0].set_xticklabels(x_center, rotation = 90)
+    axes[1,0].set_ylabel("% of samples with an error")
+    axes[1,0].set_ylim(0,50)
+
+    # BMI
+    x_bmi, y_bmi = get_data("BMI", count_samples, count_errs, df_metadata)
+    x_bmi, y_bmi = get_data("BMI", count_samples, count_errs, df_metadata)
+    axes[1,1].set_title('BMI')
+    axes[1,1].set_ylabel("% of samples with an error")
+
+
+    fig.delaxes(axes[1,2])
+    
+    plt.tight_layout()
+    
     return fig
