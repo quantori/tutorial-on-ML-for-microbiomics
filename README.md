@@ -14,5 +14,5 @@ pip install requirements.txt
 
 1. Clone the github repo.
 2. Install requirements.
-3. If you want to train models and run SHAP from scratch, which may take several hours, you are ready to go. If you would like to use pre-computed trained models and SHAP values (recommended; default), you need to download results.pickle (693.1 MB) and shap_dict.pickle (31.5 MB) and drop them into the cloned repo.
+3. If you want to train models and run SHAP from scratch (which may take several hours) you are ready to go. If you would like to load pre-computed trained models and SHAP values (recommended; default), you need to download results.pickle (693.1 MB), X_test_for_shap.pickle (20.2 MB), and shap_dict.pickle (31.5 MB) and drop them into the cloned repo.
 4. Run the ipnyb notebook. 
