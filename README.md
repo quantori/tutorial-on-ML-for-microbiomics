@@ -1,4 +1,4 @@
-# Best practices for machine learning in microbiomics
+# Tutorial on machine learning in microbiomics
 
 This repository contains python implementations (tested on version 3.10.0) supporting the tutorial described in:
 
