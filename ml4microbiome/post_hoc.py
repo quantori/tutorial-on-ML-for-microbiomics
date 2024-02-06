@@ -1,4 +1,5 @@
 from collections import defaultdict 
+from typing import Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,13 +9,16 @@ import shap
 def shap_(
 	model: any, 
 	X_test: pd.DataFrame, 
-	) -> shap._explanation.Explanation:
+) -> shap._explanation.Explanation:
 	"""
 	Calculate SHAP values.
 	
 	Args:
-	model: trained/tuned model.
-	X_test: test feature dataset.
+		model: trained/tuned model.
+		X_test: test feature dataset.
+	
+	Returns:
+		shap_values: shap values calculated by the SHAP package. 
 	"""
 	explainer = shap.Explainer(model.predict, X_test.to_numpy())
 	num_features = X_test.shape[1]
@@ -27,14 +31,14 @@ def plot_shap(
 	shap_dict: dict,
 	X_test_for_shap: list,
 	feature_names: list,
-	) -> plt.Figure:
+) -> plt.Figure:
 	"""
 	Plot SHAP summary bar and beeswarm plots.
 	
 	Args:
-	shap_dict: keys are indices for reps, values are shap._explanation.Explanation outputs (values, base_values, data) for each sample in each rep. 
-	X_test_for_shap: for each rep, the X_test dataset (pandas dataframe) that was used to train the model.
-	feature_names: names of features.
+		shap_dict: keys are indices for reps, values are shap._explanation.Explanation outputs (values, base_values, data) for each sample in each rep. 
+		X_test_for_shap: for each rep, the X_test dataset (pandas dataframe) that was used to train the model.
+		feature_names: names of features.
 	
 	Returns:
 		The generated matplotlib Figure object.	
@@ -61,15 +65,15 @@ def plot_shap(
 	ax0 = fig.add_subplot(121)
 	shap.summary_plot(np.array(SHAP_values_per_fold), 
 					  pd.concat(test_values_per_fold), 
-					  [i.split("s__")[1] for i in feature_names], 
-					  plot_type="bar", 
+					  [i.split('s__')[1] for i in feature_names], 
+					  plot_type='bar', 
 					  max_display=15,
 					  show=False)
 	
 	ax1 = fig.add_subplot(122)
 	shap.summary_plot(np.array(SHAP_values_per_fold),
 					  features=pd.concat(test_values_per_fold),
-					  feature_names=[i.split("s__")[1] for i in feature_names],
+					  feature_names=[i.split('s__')[1] for i in feature_names],
 					  max_display=15,
 					  show=False
 	)
@@ -82,13 +86,16 @@ def plot_shap(
 def errors(
 	yhat: np.ndarray,
 	y_test: pd.DataFrame
-	) -> dict[str, int]:
+) -> dict[str, int]:
 	"""
 	Record sample index of true positives, true negatives, false positives, and false negatives.
 	
 	Args:
-	yhat: model predictions.
-	y_test: test target labels.
+		yhat: model predictions.
+		y_test: test target labels.
+	
+	Returns:
+		cm_idx: keys = tp/tn/fp/fn, values = counts.
 	"""
 	cm_idx = {'tp':[], 'tn':[], 'fp':[], 'fn':[]} 
 	for i, idx in enumerate(y_test.index):
@@ -105,25 +112,34 @@ def errors(
 	
 def calc_errs_per_sample(
 	results: defaultdict, 
-	data_type_key: str, 
-	tax_level_key: str, 
-	alg_key: str, 
+	data_type_key: Literal['metadata_only', 'microbiome_only', 'metadata_microbiome'], 
+	tax_level_key: Literal['species', 'genus', 'family', 'all'], 
+	alg_key: Literal['random_forest', 'lightGBM', 'logistic_regression_L1'], 
 	y_encoded: pd.Series
-	) -> (defaultdict, defaultdict, defaultdict):
+) -> (defaultdict, defaultdict, defaultdict):
 	"""
-	Calculate number of errors per sample, number reps of each sample
+	For the k-fold CV experiment, calculate the number of errors per sample and number of times each sample was in the test set.
 	
+	Args:
+		results: k-fold CV experimental results. For each replicate per data type, taxonomic level, and ML algorithm, you can access train_index, test_index, model init seed, AUROC, F1, CM, yhat, model.
+		data_type_key: data type used for training.
+		tax_level_key: taxonomic level used for training.
+        alg_key: algorithm used for training.
+		y_encoded: y values for full dataset encoded as 0s (no schizophrenia) and 1s (schizophrenia).
+	
+	Returns:
+		errs_per_sample: keys = samples (indexed from 0-n), values = # errors per sample in the k-fold CV experiment.
+		occurence: keys = samples (indexed from 0-n), values = # times each sample appeared in the test set in the k-fold CV experiment.
 	"""
-	y_hats = results[data_type_key][tax_level_key][alg_key]["yhat"]
+	y_hats = results[data_type_key][tax_level_key][alg_key]['yhat']
 	y_tests = []
 	
-	count_errs = defaultdict(int)
 	occurence = defaultdict(int)
 	errs_per_sample = defaultdict(int)
 	
-	for i in range(len(results[data_type_key][tax_level_key][alg_key]["test_index"])):
+	for i in range(len(results[data_type_key][tax_level_key][alg_key]['test_index'])):
 		#print(i)
-		idxs = results[data_type_key][tax_level_key][alg_key]["test_index"][i]
+		idxs = results[data_type_key][tax_level_key][alg_key]['test_index'][i]
 		y_trues = [y_encoded[i] for i in idxs]
 	
 		for j in range(len(idxs)):
@@ -133,16 +149,29 @@ def calc_errs_per_sample(
 			#print("sample",sample)
 			occurence[sample] += 1
 			if y_true != y_hat:
-				count_errs[sample] += 1
 				errs_per_sample[sample] += 1
 			else:
 				if sample not in errs_per_sample:
 					errs_per_sample[sample] = 0
-					count_errs[sample] = 0
 					
-	return errs_per_sample, occurence, count_errs 	
+	return errs_per_sample, occurence 	
 
-def plot_err_breakdown(df_metadata, errs_per_sample, occurence):
+def plot_err_breakdown(
+	df_metadata: pd.DataFrame, 
+	errs_per_sample: defaultdict, 
+	occurence: defaultdict
+) -> plt.Figure:
+	"""
+	Generate a figure with multiple subplots to visualize the number of errors seen in the k-fold CV experiment for selected demographic characteristics.
+    
+    Args:
+    	df_metadata: metadata mapping sample to demographic factors.
+		errs_per_sample: keys = samples (indexed from 0-n), values = # errors per sample in the k-fold CV experiment.
+		occurence: keys = samples (indexed from 0-n), values = # times each sample appeared in the test set in the k-fold CV experiment.
+    	
+    Returns:
+    	The generated matplotlib Figure object.
+	"""
 	to_plot = ['Gender (1:male, 2:female)', 'Marital status', 'Dwelling condition', 'Education level', 'Sample center', 'Diagnosis', 'Smoking', 'Staple food structure', 'Frequency of drinking yogurt or probiotic drinks']
 	len(to_plot)
 	dfm = df_metadata.copy().reset_index(drop=True)
@@ -159,7 +188,7 @@ def plot_err_breakdown(df_metadata, errs_per_sample, occurence):
 		for j in range(ncols):
 			if i >= 3 : continue
 			feature_type = to_plot[feature_idx]
-			if i > 3: print("BREAK")
+			if i > 3: print('BREAK')
 			axes[i,j].set_ylim(0,55)
 			grouped = dfm.groupby(feature_type).sum()
 			y_err = grouped['errs'].values
@@ -243,33 +272,54 @@ def plot_err_breakdown(df_metadata, errs_per_sample, occurence):
 	axes[2,2].set_title('Frequency of drinking yogurt or probiotic drinks') 
 	
 	# Age
-	axes[3,0].scatter(dfm["Age"], dfm["errs"])
+	axes[3,0].scatter(dfm['Age'], dfm['errs'])
 	axes[3,0].set_title('Age') 
-	axes[3,0].set_xlabel("Age (years)")
-	axes[3,0].set_ylabel("Number of errors")
+	axes[3,0].set_xlabel('Age (years)')
+	axes[3,0].set_ylabel('Number of errors')
 	axes[3,0].set_ylim(-0.5,10.5)
 	
 	# BMI
-	axes[3,1].scatter(dfm["BMI"], dfm["errs"])
+	axes[3,1].scatter(dfm['BMI'], dfm['errs'])
 	axes[3,1].set_title('BMI') 
-	axes[3,1].set_xlabel("BMI")
+	axes[3,1].set_xlabel('BMI')
 	axes[3,1].set_ylim(-0.5,10.5)
 	
 	# Blood pressure
-	axes[3,2].scatter(dfm["Systolic pressure(mmHg)"]/dfm["Diastolic pressure(mmHg)"], dfm["errs"])
+	axes[3,2].scatter(dfm['Systolic pressure(mmHg)']/dfm['Diastolic pressure(mmHg)'], dfm['errs'])
 	axes[3,2].set_title('Blood pressure') 
-	axes[3,2].set_xlabel("Systolic / diastolic pressure")
+	axes[3,2].set_xlabel('Systolic / diastolic pressure')
 	axes[3,2].set_ylim(-0.5,10.5)
 	
 	for i in range(nrows-1):
-		axes[i,0].set_ylabel("Percent errors (%)")
+		axes[i,0].set_ylabel('Percent errors (%)')
 	
 	fig.tight_layout()
 	
 	return fig
 
-def interaction_heatmap(var1, var2, var1_names, var2_names, df_metadata, errs_per_sample, occurence):
+def interaction_heatmap(
+	var1: str, 
+	var2: str, 
+	var1_names: np.ndarray, 
+	var2_names: np.ndarray, 
+	df_metadata: pd.DataFrame, 
+	errs_per_sample: defaultdict, 
+occurence) -> plt.Figure:
+	"""
+	Plot a heatmap where each axis is a categorical demographic variable and the value/colour per cell shows the number of errors in the k-fold CV for samples matching categories within each demographic variable.
 	
+	Args: 
+		var1: variable 1 to query / df_metadata column name. 		
+		var2: variable 2 to query / df_metadata column name.
+		var1_names: categories of variable 1 within corresponding df_metadata column.
+		var2_names: categories of variable 2 within corresponding df_metadata column.
+    	df_metadata: metadata mapping sample to demographic factors.
+		errs_per_sample: keys = samples (indexed from 0-n), values = # errors per sample in the k-fold CV experiment.
+		occurence: keys = samples (indexed from 0-n), values = # times each sample appeared in the test set in the k-fold CV experiment.
+		
+	Returns:
+    	The generated matplotlib Figure object.	
+	"""
 	# Sort education levels from highest to lowest
 	ed_levels = ['master degree or above',
 			 'college',
@@ -302,13 +352,13 @@ def interaction_heatmap(var1, var2, var1_names, var2_names, df_metadata, errs_pe
 	im = ax.imshow(out)
 	
 	cbar = ax.figure.colorbar(im, ax=ax)
-	cbar.ax.set_ylabel("Percent errors (%) per cell", rotation=-90, va="bottom")
+	cbar.ax.set_ylabel('Percent errors (%) per cell', rotation=-90, va='bottom')
 
-	if var1 == "Education level": var1_names = ed_levels
-	if var2 == "Education level": var2_names = ed_levels
+	if var1 == 'Education level': var1_names = ed_levels
+	if var2 == 'Education level': var2_names = ed_levels
 	
-	if var1 == "Gender (1:male, 2:female)": var1_names = ["Female", "Male"]
-	if var2 == "Gender (1:male, 2:female)": var2_names = ["Female", "Male"]
+	if var1 == 'Gender (1:male, 2:female)': var1_names = ['Female', 'Male']
+	if var2 == 'Gender (1:male, 2:female)': var2_names = ['Female', 'Male']
 	
 	ax.set_xticks(np.arange(len(var2_names)), labels=var2_names, rotation=90)
 	ax.set_yticks(np.arange(len(var1_names)), labels=var1_names)
@@ -317,38 +367,46 @@ def interaction_heatmap(var1, var2, var1_names, var2_names, df_metadata, errs_pe
 	for i in range(len(var1_names)):
 		for j in range(len(var2_names)):
 			text = ax.text(j, i, out[i][j],
-						   ha="center", va="center", color="w")
+						   ha='center', va='center', color='w')
 	ax.grid(None)		
-	#ax.set_title("Error rate (%) for \nsample center and education level")
 	
 	return fig.tight_layout()		
 	
-def plot_distrib_errs(count_errs: defaultdict) -> plt.Figure:
+def plot_distrib_errs(errs_per_sample: defaultdict) -> plt.Figure:
 	"""
 	Plot the distribution of errors per sample across all replicates of the experiment.
 	
 	Args:
-	count_errs: keys = index of sample, values = # errors seen across the experiment
+		errs_per_sample: keys = index of sample, values = # errors seen across the experiment.
 	
 	Returns:
-	The generated matplotlib Figure object. 
+		The generated matplotlib Figure object. 
 	"""
 	fig, ax = plt.subplots()
 	
 	counts = defaultdict(int)
-	for i in count_errs:
-	    counts[count_errs[i]] += 1
+	for i in errs_per_sample:
+	    counts[errs_per_sample[i]] += 1
 	
 	ax.bar(counts.keys(), counts.values())
 	ax.set_xlim(-0.5,(max(counts.keys())+0.5))
 	ax.set_ylim(0, 105)
 	
-	ax.set_xlabel("Number of errors per sample")
-	ax.set_ylabel("Number of samples")
+	ax.set_xlabel('Number of errors per sample')
+	ax.set_ylabel('Number of samples')
 	
 	return fig.tight_layout()	   
 	
-def dataset_wide_err(count_errs, occurence):
+def dataset_wide_err(
+	errs_per_sample: defaultdict, 
+	occurence: defaultdict
+	):
+	"""
+	Calculates and prints dataset-wide error rate for a k-fold CV experimental condition.
 	
-	err = sum(count_errs.values())/sum(occurence.values())*100
-	print("The dataset wide error rate is",str(round(err,2))+"%")
+	Args:
+		errs_per_sample: keys = samples (indexed from 0-n), values = # errors per sample in the k-fold CV experiment.
+		occurence: keys = samples (indexed from 0-n), values = # times each sample appeared in the test set in the k-fold CV experiment.
+	"""
+	err = sum(errs_per_sample.values())/sum(occurence.values())*100
+	print('The dataset wide error rate is',str(round(err,2))+'%')
