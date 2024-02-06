@@ -43,12 +43,10 @@ def plot_shap(
 	Returns:
 		The generated matplotlib Figure object.	
 	"""
-	
 	# This gives us SHAP values for every sample
 	SHAP_values_per_fold = []
 	for rep in range(len(shap_dict)):
 		shap_values = shap_dict[rep].values
-		#print(rep, type(shap_values), len(shap_values))
 		for SHAPs in shap_values:
 			SHAP_values_per_fold.append(SHAPs)
 
