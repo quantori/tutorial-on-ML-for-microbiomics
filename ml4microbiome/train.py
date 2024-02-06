@@ -1,6 +1,7 @@
 """Module containing utility functions for model training and testing."""
-from collections import Counter
+from collections import Counter, defaultdict
 import random
+from statistics import mode
 from typing import Any, Literal
 
 import numpy as np
@@ -11,10 +12,9 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix, f1_score, roc_auc_score
 from sklearn.model_selection import RandomizedSearchCV
-from statistics import mode
 
 def train_model(
-    alg: Literal["random_forest", "lightGBM", "logistic_regression_L1"],
+    alg: Literal['random_forest', 'lightGBM', 'logistic_regression_L1'],
     X_train: pd.DataFrame,
     y_train: pd.Series,
     random_state: int,
@@ -24,9 +24,9 @@ def train_model(
 
     Args:
         alg: algorithm to use for training.
-            - "random_forest": Random Forest classifier
-            - "lightGBM": LightGBM classifier
-            - "logistic_regression_L1": Logistic Regression with L1 regularization
+            - "random_forest": Random Forest classifier.
+            - "lightGBM": LightGBM classifier.
+            - "logistic_regression_L1": Logistic Regression with L1 regularization.
         X_train: training feature dataset.
         y_train: training target labels.
         random_state: seed for reproducibility.
@@ -66,9 +66,9 @@ def tune_model(
 
     Args:
         alg: algorithm to use for training.
-            - "random_forest": Random Forest classifier
-            - "lightGBM": LightGBM classifier
-            - "logistic_regression_L1": Logistic Regression with L1 regularization
+            - "random_forest": Random Forest classifier.
+            - "lightGBM": LightGBM classifier.
+            - "logistic_regression_L1": Logistic Regression with L1 regularization.
         param_distributions: hyperparameter distributions for the specified algorithm.
             The dictionary should contain the hyperparameters as key-value pairs,
             where the values define the parameter distributions.
@@ -163,9 +163,9 @@ def baseline345(
     
     Args:
         alg: algorithm to use for training.
-            - "random_forest": Random Forest classifier
-            - "lightGBM": LightGBM classifier
-            - "logistic_regression_L1": Logistic Regression with L1 regularization
+            - "random_forest": Random Forest classifier.
+            - "lightGBM": LightGBM classifier.
+            - "logistic_regression_L1": Logistic Regression with L1 regularization.
     	X_train: training feature dataset.
         y_train: training target labels. 
         random_state:  seed for reproducibility.
@@ -187,10 +187,45 @@ def baseline345(
 
     return model.predict(X_test.to_numpy())
     
-def save_results(results, save_name, tax_level, alg, train_index, test_index, i, auc, f1, cm, yhat, model):
+def save_results(	
+	results: defaultdict, 
+	save_name: Literal['metadata_only', 'microbiome_only', 'metadata_microbiome', 
+					   'baseline1', 'baseline2', 'baseline_random_forest', 
+					   'baseline_lightGBM', 'baseline_logistic_regression_L1'], 
+	tax_level: Literal['species', 'genus', 'family', 'all'], 
+	alg: Literal['random_forest', 'lightGBM', 'logistic_regression_L1'], 
+	train_index: list, 
+	test_index: list, 
+	random_state: int, 
+	auc: list, 
+	f1: list, 
+	cm: list, 
+	yhat: list, 
+	model: list 
+) -> defaultdict:
+	"""
+	Save results of k-fold CV experimental condition within the results defaultdict.
+	
+	Args:
+		results: k-fold CV experimental results. For each replicate per data_type, taxonomic_level, and alg, you can access train_index, test_index, model_init_seed, AUROC, F1, CM, yhat, model.
+		save_name: name of data type.
+		tax_level: name of taxonomic level.
+		alg: name of learning algorithm.
+		train_index: list of array of samples / sample indices that were split into the training set.
+		test_index: list of array of samples / sample indices that were split into the test set.
+		random_state: list of seeds used for reproducibility. 
+		auc: list of AUROC scores for experimental replicates.
+		f1: list of F1 scores for experimental replicates.
+		cm: list of array of confusion matrix scores for experimental replicates.
+		yhat: list of array of predictions made by each replicate's trained model.
+		model: list of arrays of models.
+		
+	Returns: 
+		results: updated results defaultdict.
+	"""
 	results[save_name][tax_level][alg]["train_index"].append(train_index)
 	results[save_name][tax_level][alg]["test_index"].append(test_index)
-	results[save_name][tax_level][alg]["model init seed"].append(i)
+	results[save_name][tax_level][alg]["model_init_seed"].append(random_state)
 	results[save_name][tax_level][alg]["AUROC"].append(auc)
 	results[save_name][tax_level][alg]["F1"].append(f1)
 	results[save_name][tax_level][alg]["CM"].append(cm)
@@ -199,8 +234,16 @@ def save_results(results, save_name, tax_level, alg, train_index, test_index, i,
 	
 	return results
 
-def results_overview_table(results):
-
+def results_overview_table(results: defaultdict) -> (pd.DataFrame, pd.DataFrame):
+	"""
+	Generate pandas dataframes that summarize k-fold CV experiments; one for easy viewing by readers and one for easy calculation in downstream analysis. 
+	
+	Args:
+		results: k-fold CV experimental results. For each replicate per data_type, taxonomic_level, and alg, you can access train_index, test_index, model_init_seed, AUROC, F1, CM, yhat, model.		
+	Returns:
+		results_overview: summary of results (e.g., median AUROC, MAD AUROC, etc) for each experimental condition (data_type, taxonomic_level, alg).
+		results_auroc: data frame where, for each experimental condition (data_type, taxonomic_level, alg), there is a column with list of all AUROC scores obtained.
+	"""
 	results_overview = []
 	results_auroc = []
 	for data_type_key, data_type_value in results.items():
