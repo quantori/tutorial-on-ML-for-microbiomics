@@ -408,8 +408,8 @@ def get_data(
     
     Args:
         col_name: name of demographic factor.
-        count_samples: for each sample, the number of times that the prediction was wrong across all nested CV test reps.
-        count_errs: for each sample, the number of predictions made across all nested CV test reps.
+        count_samples: for each sample, the number of times that the prediction was wrong across all test reps.
+        count_errs: for each sample, the number of predictions made across all test reps.
         df_metadata: metadata mapping sample to demographic factors.
         
     Returns:
