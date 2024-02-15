@@ -16,6 +16,7 @@ and algorithm:
     e. Evaluates the model's performance on the outer test set and records the results.
 5. Saves the inner and outer results to pickle files.
 """
+
 import datetime
 from collections import defaultdict
 
@@ -23,7 +24,7 @@ import dill
 import numpy as np
 from sklearn.model_selection import train_test_split
 
-from ml4microbiome import train, pre_process
+from ml4microbiome import pre_process, train, post_hoc
 
 tax_levels = ["all", "species", "genus", "family"]
 data_types = ["metadata_only", "microbiome_only", "metadata_microbiome"]
@@ -118,8 +119,8 @@ for data_type in data_types:
                     test_size=test_size,
                     stratify=y_encoded,
                     random_state=outer_iter_no,
-                )					
-				
+                )
+
                 outer_X_train = outer_X_train.fillna(outer_X_train.median())
                 outer_X_test = outer_X_test.fillna(outer_X_train.median())
 
@@ -141,7 +142,7 @@ for data_type in data_types:
                         stratify=outer_y_train,
                         random_state=inner_iter_no,
                     )
-                    
+
                     best_model, best_params = train.tune_model(
                         alg,
                         params_distributions[alg],
@@ -175,18 +176,18 @@ for data_type in data_types:
                 model = train.train_model(
                     alg, outer_X_train, outer_y_train, outer_iter_no, params
                 )
-                
+
                 yhat = model.predict(outer_X_test.to_numpy())
-                
+
                 auc, f1, cm = train.test_model(model, yhat, outer_y_test)
                 outer_results[data_type][tax_level][alg]["AUROC"].append(auc)
                 outer_results[data_type][tax_level][alg]["F1"].append(f1)
                 outer_results[data_type][tax_level][alg]["CM"].append(cm)
-                
-                shap = posthoc.shap(model, outer_X_test)
+
+                shap = post_hoc.shap(model, outer_X_test)
                 outer_results[data_type][tax_level][alg]["SHAP"].append(shap)
 
-                cm_index = posthoc.errors(yhat, outer_y_test)
+                cm_index = post_hoc.errors(yhat, outer_y_test)
                 outer_results[data_type][tax_level][alg]["errors"].append(cm_index)
 
                 end_time = datetime.datetime.now()
