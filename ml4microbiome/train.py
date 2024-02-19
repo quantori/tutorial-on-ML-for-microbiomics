@@ -14,6 +14,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix, f1_score, roc_auc_score
 from sklearn.model_selection import RandomizedSearchCV
 
+
 def tune_model(
     alg: Literal["random_forest", "lightGBM", "logistic_regression_L1"],
     param_distributions: dict[str, Any],

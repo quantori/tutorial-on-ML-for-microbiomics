@@ -1,7 +1,8 @@
 """Module containing utility functions to visualize data."""
-from collections import defaultdict
+
 import random
 import textwrap
+from collections import defaultdict
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -9,6 +10,7 @@ import seaborn as sns
 from sklearn.manifold import TSNE
 
 sns.set_theme(style="whitegrid")
+
 
 def _countplot(
     df: pd.DataFrame,
@@ -61,8 +63,8 @@ def _violinplot(
     title: str,
     xlabel: str,
     ylabel: str,
-    yticklabels: list[str]=None,
-    plot_dps: bool=True,
+    yticklabels: list[str] | None = None,
+    plot_dps: bool = True,
 ) -> None:
     """Create a violin plot using seaborn to visualize the distribution of data
     points in each category.
@@ -79,8 +81,10 @@ def _violinplot(
         plot_dps: plot stripplot overtop violin plot.
     """
     sns.violinplot(data=df, x=x, y=y, ax=ax, inner=None)
-    if plot_dps: sns.stripplot(data=df, x=x, y=y, ax=ax, color="black")
-    if yticklabels: ax.set_yticklabels(yticklabels)
+    if plot_dps:
+        sns.stripplot(data=df, x=x, y=y, ax=ax, color="black")
+    if yticklabels:
+        ax.set_yticklabels(yticklabels)
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
     ax.set_title(title)
@@ -341,7 +345,7 @@ def plot_tsne(df: pd.DataFrame, hue: pd.Series, random_state: int) -> plt.Figure
 
 def plot_data_type(df: pd.DataFrame) -> plt.Figure:
     fig, ax = plt.subplots()
-    
+
     _violinplot(
         df=df,
         x="Data type",
@@ -351,17 +355,18 @@ def plot_data_type(df: pd.DataFrame) -> plt.Figure:
         xlabel="",
         ylabel="AUROC",
         yticklabels=[],
-        plot_dps=False
+        plot_dps=False,
     )
-    
-    ax.tick_params(axis='x', labelrotation=90)
-    ax.set_ylim(0,1)
-    
+
+    ax.tick_params(axis="x", labelrotation=90)
+    ax.set_ylim(0, 1)
+
     return fig
-    
+
+
 def plot_tax_level(df: pd.DataFrame) -> plt.Figure:
     fig, ax = plt.subplots()
-    
+
     _violinplot(
         df=df,
         x="Taxonomic level",
@@ -371,17 +376,18 @@ def plot_tax_level(df: pd.DataFrame) -> plt.Figure:
         xlabel="",
         ylabel="AUROC",
         yticklabels=[],
-        plot_dps=False
+        plot_dps=False,
     )
-    
-    ax.tick_params(axis='x', labelrotation=90)
-    ax.set_ylim(0,1)
-    
+
+    ax.tick_params(axis="x", labelrotation=90)
+    ax.set_ylim(0, 1)
+
     return fig
-    
+
+
 def plot_ml_alg(df: pd.DataFrame) -> plt.Figure:
     fig, ax = plt.subplots()
-    
+
     _violinplot(
         df=df,
         x="ML algorithm",
@@ -391,27 +397,31 @@ def plot_ml_alg(df: pd.DataFrame) -> plt.Figure:
         xlabel="",
         ylabel="AUROC",
         yticklabels=[],
-        plot_dps=False
+        plot_dps=False,
     )
-    
-    ax.tick_params(axis='x', labelrotation=90)
-    ax.set_ylim(0,1)
-    
+
+    ax.tick_params(axis="x", labelrotation=90)
+    ax.set_ylim(0, 1)
+
     return fig
-    
+
+
 def get_data(
-    col_name: str, 
-    count_samples: defaultdict, 
-    count_errs: defaultdict, 
-    df_metadata: pd.DataFrame) -> (list, list):
-    """For a given demographic factor, retrieves the error rate (%) per group. This is later used for plotting.
-    
+    col_name: str,
+    count_samples: defaultdict,
+    count_errs: defaultdict,
+    df_metadata: pd.DataFrame,
+) -> tuple[list[str], list[float]]:
+    """For a given demographic factor, retrieves the error rate (%) per group.
+    This is later used for plotting.
+
     Args:
         col_name: name of demographic factor.
-        count_samples: for each sample, the number of times that the prediction was wrong across all test reps.
+        count_samples: for each sample, the number of times that the prediction was wrong 
+        	across all test reps.
         count_errs: for each sample, the number of predictions made across all test reps.
         df_metadata: metadata mapping sample to demographic factors.
-        
+
     Returns:
         x: names of groups within a demographic factor.
         y: for each group, the percentage of samples that were incorrectly predicted.
@@ -420,21 +430,31 @@ def get_data(
         ValueError: if an invalid taxonomic level is provided.
     """
     if count_samples[0] < count_errs[0]:
-       raise ValueError(
-               'It appears that count_samples and count_errs were provided in the reverse order.'
-       )
-    
-    df1 = pd.DataFrame(count_errs.items()).sort_values(by=[0]).set_index(df_metadata[col_name].index).rename(columns={1:'num errors'})
-    df2 = pd.DataFrame(count_samples.items()).sort_values(by=[0]).set_index(df_metadata[col_name].index).rename(columns={1:'num samples'})
+        raise ValueError(
+            "It appears that count_samples and count_errs were provided in the reverse order."
+        )
+
+    df1 = (
+        pd.DataFrame(count_errs.items())
+        .sort_values(by=[0])
+        .set_index(df_metadata[col_name].index)
+        .rename(columns={1: "num errors"})
+    )
+    df2 = (
+        pd.DataFrame(count_samples.items())
+        .sort_values(by=[0])
+        .set_index(df_metadata[col_name].index)
+        .rename(columns={1: "num samples"})
+    )
     df1 = pd.concat([df2, df1], axis=1)
     df1 = pd.concat([df_metadata[col_name], df1], axis=1)
-    
+
     groups = []
     err_perc = []
     for i in df1[col_name].unique():
-        errs = df1.groupby(col_name).sum().loc[i]['num errors']
-        samples = df1.groupby(col_name).sum().loc[i]['num samples']
+        errs = df1.groupby(col_name).sum().loc[i]["num errors"]
+        samples = df1.groupby(col_name).sum().loc[i]["num samples"]
         groups.append(i)
-        err_perc.append(errs/samples*100)
-        
+        err_perc.append(errs / samples * 100)
+
     return groups, err_perc
