@@ -2,7 +2,8 @@
 
 This repository contains python implementations (tested on version 3.10.0) supporting the tutorial described in:
 
-_Dudek, N.K., Chakhvadze, M., Kobakhidze, S., Kantidze, O., Gankin, Y. Supervised machine learning for microbiomics: bridging the gap between current and best practices. In prep for submission (2024)._
+_Dudek, N.K., Chakhvadze, M., Kobakhidze, S., Kantidze, O., Gankin, Y. "Supervised machine learning for microbiomics: bridging the gap between current and best practices." Machine Learning with Applications (2024): 100607._
+
 
 In this tutorial, we'll develop an ML classifier that can predict whether an individual has schizophrenia based on the composition of their fecal microbiota. This work is motivated by the following questions:
 1. Does the microbiome have predictive value for the diagnosis of schizophrenia? If so:
